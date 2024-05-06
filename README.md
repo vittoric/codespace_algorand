@@ -1,4 +1,5 @@
 # BUILDH3R codespace_algorand
 
-First run ´sh algorand_setup.sh´
+First run 
 
+´sh algorand_setup.s´
