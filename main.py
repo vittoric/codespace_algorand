@@ -75,16 +75,14 @@ print(algorand.account.get_information(reciver_acct.address))
 Screenshot proof: Print out the information of the three accounts that you sent the asset too."""
 
 
-# Connect to the Algorand client (default local network)
 algorand = AlgorandClient.default_local_net()
 
-# Get dispenser account for funding
 dispenser = algorand.account.dispenser()
-
-# Create a random account for the asset creator
+#print(dispenser.address)
 creator = algorand.account.random()
+#print(creator.address)
+#print(algorand.account.get_information(creator.address))
 
-# Fund the creator account with 10,000,000 microAlgos
 algorand.send.payment(
     PayParams(
         sender=dispenser.address,
@@ -92,70 +90,51 @@ algorand.send.payment(
         amount=10_000_000
     )
 )
+#print(algorand.account.get_information(creator.address))
 
-# Define asset creation parameters
-asset_params = AssetCreateParams(
-    sender=creator.address,
-    total=222,  # Total number of your asset units
-    asset_name="BUILDH3R",
-    unit_name="HER"
+# Create the token
+sent_token = algorand.send.asset_create(
+    AssetCreateParams(
+        sender=creator.address,
+        total=648,
+        asset_name="BUILDHER",
+        unit_name="HER"
+    )
 )
 
-# Create the Algorand Standard Asset (ASA)
-sent_txn = algorand.send.asset_create(asset_params)
+asset_id = sent_token["confirmation"]["asset-index"]
+#print(asset_id)
 
-# Extract the asset ID from the confirmation
-asset_id = sent_txn["confirmation"]["asset-index"]
-
-# Define three random accounts to receive the asset
-recipient_accounts = [algorand.account.random() for _ in range(3)]
+# Create three receiver accounts
+receiver = [algorand.account.random() for _ in range(3)]
 
 
-# Print the addresses of the recipient accounts
-for i, recipient in enumerate(recipient_accounts):
-  print(f"Recipient Account {i+1} Address: {recipient.address}")
-
-# Fund each recipient account with 10,000,000 microAlgos
-for recipient in recipient_accounts:
+for receiver_acct in receiver:
     algorand.send.payment(
         PayParams(
             sender=dispenser.address,
-            receiver=recipient.address,
+            receiver=receiver_acct.address,
             amount=10_000_000
         )
     )
 
-# Print information for each recipient account after funding
-for recipient in recipient_accounts:
-    account_info = algorand.account.get_information(recipient.address)
-    print(f"\nRecipient Account {recipient.address} Information:")
-    print(account_info)
-
-
-# Opt-in each recipient account to receive the asset
-for recipient in recipient_accounts:
+#opt in to asset so don't get spammed
     algorand.send.asset_opt_in(
         AssetOptInParams(
-            sender=recipient.address,
+            sender=receiver_acct.address,
             asset_id=asset_id
         )
     )
 
-# Create separate AssetTransferParams objects for each transfer
-transfer_params_list = []
-for recipient in recipient_accounts:
-    transfer_params = AssetTransferParams(
-        sender=creator.address,
-        receiver=recipient.address,  # Set directly here
-        asset_id=asset_id,
-        amount=22
-    )
-    transfer_params_list.append(transfer_params)
+    asset_transfer =AssetTransferParams(
+            sender=creator.address,
+            receiver=receiver_acct.address,
+            asset_id=asset_id,
+            amount=210,
+            last_valid_round=100 
+        )
+    
+    algorand.send.asset_transfer(asset_transfer)
 
-
-# Print information for each recipient account after receiving the asset
-for recipient in recipient_accounts:
-    account_info = algorand.account.get_information(recipient.address)
-    print(f"\nRecipient Account {recipient.address} Information (After Transfer):")
-    print(account_info)
-
+    print(f"Account address------> {receiver_acct.address} \nInformation after sending:")
+    print(algorand.account.get_information(receiver_acct.address) , " \n")
